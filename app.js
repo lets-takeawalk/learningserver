@@ -10,15 +10,17 @@ const serverURL = 'http://ec2-3-35-14-61.ap-northeast-2.compute.amazonaws.com:30
 // 초기 구동 상황: 메인서버에서 학습서버로 모델 학습을 시킴.
 // - 메인서버의 addObject/imgInfo에서 학습서버로 모델 학습 시작 트리거 실행(미구현)
 // - 메인서버에서 학습서버로 학습 시작 리퀘스트를 보냄
-// - 학습서버에서 메인서버에 관련 데이터를 요구 (-> 메인서버에 추가 API필요) ---- (1)
+// - 학습서버에서 메인서버에 관련 데이터를 요구 (-> main/learingsever/imgdata) ---- (1)
 // - 학습서버에서 받은 정보를 바탕으로 학습시작 ---- (2)
 // - 학습이 끝난 뒤에 메인 서버에 학습 종료를 알림(mainserver/isNewimg) ---- (3)
 // - mainserver/learningserver/isNewImg에서 새로운 학습 대상이 존재할 경우 다시 아래 API(get.'/')호출(데이터 전송 ㄴㄴ)
 
 
 app.get('/', (req, res) =>{
-    // 메인서버로 리퀘스트 생성 ---- (1)
-    
+    // 메인서버로 리퀘스트 생성 ---- (1) 필요한 데이터를 얻어와야함.
+    request(serverURL+'/learningServer/imgdata',function(err, response, body){
+        console.log(JSON.parse(body));
+    });
 
     // 학습 시작 ---- (2)
     // "0,1,2 ...", "1000"
