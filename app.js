@@ -5,10 +5,12 @@ const app = express();
 running = false;
 
 const port = 3001;
+// 개발과 배포 URL이 다름.
 const serverURL = 'http://ec2-3-35-14-61.ap-northeast-2.compute.amazonaws.com:3000';
+const testserverURL = 'http://localhost:3000'
 
 // 초기 구동 상황: 메인서버에서 학습서버로 모델 학습을 시킴.
-// - 메인서버의 addObject/imgInfo에서 학습서버로 모델 학습 시작 트리거 실행(미구현)
+// - 메인서버의 addObject/imgInfo에서 학습서버로 모델 학습 시작 트리거 실행
 // - 메인서버에서 학습서버로 학습 시작 리퀘스트를 보냄
 // - 학습서버에서 메인서버에 관련 데이터를 요구 (-> main/learingsever/imgdata) ---- (1)
 // - 학습서버에서 받은 정보를 바탕으로 학습시작 ---- (2)
@@ -16,9 +18,13 @@ const serverURL = 'http://ec2-3-35-14-61.ap-northeast-2.compute.amazonaws.com:30
 // - mainserver/learningserver/isNewImg에서 새로운 학습 대상이 존재할 경우 다시 아래 API(get.'/')호출(데이터 전송 ㄴㄴ)
 
 
-app.get('/', (req, res) =>{
+app.get('/', async (req, res) =>{
+    // 메인서버로 리퀘스트 생성 ---- (1) 임시학습모델버전을 생성
+    request.post(testserverURL+'/learningServer/createTempModel_ver', function(err, response, body){
+        console.log(JSON.parse(body));
+    });
     // 메인서버로 리퀘스트 생성 ---- (1) 필요한 데이터를 얻어와야함.
-    request(serverURL+'/learningServer/imgdata',function(err, response, body){
+    request(testserverURL+'/learningServer/imgdata',function(err, response, body){
         console.log(JSON.parse(body));
     });
 
@@ -42,7 +48,7 @@ app.get('/', (req, res) =>{
         result.stdout.on('data', function(result){ 
             console.log(result.toString()); 
             // 학습이 끝났음을 알림 ---- (3)
-            request(serverURL+'/learningServer/isNewImg',function(err, response, body){
+            request(testserverURL+'/learningServer/isNewImg',function(err, response, body){
                 console.log(JSON.parse(body));
             });
             running = false
@@ -61,4 +67,4 @@ app.get('/r', (req, res) =>{
 // 서버 구동
 app.listen(port, () => {
     console.log(`Example app listening at http://localhost:${port}`)
-})
+});
