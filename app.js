@@ -79,6 +79,10 @@ app.get('/startLearning', async (req, res) =>{
     }
 });
 
+app.get('/', (req, res) =>{
+    res.send('on learning Server');
+});
+
 // 서버 구동
 app.listen(port, () => {
     console.log(`Example app listening at http://localhost:${port}`)
