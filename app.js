@@ -19,7 +19,7 @@ const testserverURL = 'http://localhost:3000'
 
 var onLearning = [];
 
-app.get('/', async (req, res) =>{
+app.get('/startLearning', async (req, res) =>{
     // 메인서버로 리퀘스트 생성 ---- (1) 임시학습모델버전을 생성, 최초에 한번만 사용됨.
     console.log("============start============")
     request.post(testserverURL+'/learningServer/createTempModel_ver', function(err, response, body){
@@ -77,12 +77,6 @@ app.get('/', async (req, res) =>{
         });
         result.stderr.on('data', function(data) { console.log(data.toString()); });
     }
-});
-
-app.get('/r', (req, res) =>{
-    request(serverURL+'/learningServer/isNewImg',function(err, response, body){
-        res.send(response);
-    });
 });
 
 // 서버 구동
