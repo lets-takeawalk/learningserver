@@ -2,12 +2,19 @@ const express = require('express');
 const request = require('request');
 const spawn = require('child_process').spawn; // 자식 프로세스 생성
 const app = express();
+const config = require('./config');
 running = false;
 
-const port = 3001;
-// 개발과 배포 URL이 다름.
-const serverURL = 'http://ec2-3-35-14-61.ap-northeast-2.compute.amazonaws.com:3000';
-const testserverURL = 'http://localhost:3000'
+let mainServerURL = '';
+let learningServerURL = '';
+
+if(process.env.NODE_ENV==='dev'){
+    mainServerURL = config.dev.mainserverURL;
+    learningServerURL = config.dev.learningserverURL;
+}else if(process.env.NODE_ENV==='prod'){
+    mainServerURL = config.production.mainserverURL;
+    learningServerURL = config.production.learningserverURL;
+}
 
 // 초기 구동 상황: 메인서버에서 학습서버로 모델 학습을 시킴.
 // - 메인서버의 addObject/imgInfo에서 학습서버로 모델 학습 시작 트리거 실행
@@ -22,11 +29,11 @@ var onLearning = [];
 app.get('/startLearning', async (req, res) =>{
     // 메인서버로 리퀘스트 생성 ---- (1) 임시학습모델버전을 생성, 최초에 한번만 사용됨.
     console.log("============start============")
-    request.post(testserverURL+'/learningServer/createTempModel_ver', function(err, response, body){
+    request.post(mainServerURL+'/learningServer/createTempModel_ver', function(err, response, body){
         console.log(JSON.parse(body).code+" from creatTempModel_ver, start learning sequence");
     });
     // 메인서버로 리퀘스트 생성 ---- (1) 필요한 데이터를 얻어와야함.
-    request(testserverURL+'/learningServer/imgdata',function(err, response, body){
+    request(mainServerURL+'/learningServer/imgdata',function(err, response, body){
         var tmp = JSON.parse(body).buildingInfo;
         for(var i= 0;i<tmp.length;i++)
             onLearning.push(tmp[i].id);
@@ -58,7 +65,7 @@ app.get('/startLearning', async (req, res) =>{
 
             // 학습이 끝났음을 알림 ---- (3), 추가로 학습할 데이터가 있는지 확인 메인서버에 요청.
             let option ={
-                url: testserverURL+'/learningServer/isNewImg',
+                url: mainServerURL+'/learningServer/isNewImg',
                 method: 'POST',
                 body:{// result에 새로운 모델이 저장된 URL이 나온다. 그것을 아래에 넣어줌.
                     modelURL: 'https://medium.com/harrythegreat/node-js%EC%97%90%EC%84%9C-request-js-%EC%82%AC%EC%9A%A9%ED%95%98%EA%B8%B0-28744c52f68d'
@@ -80,10 +87,10 @@ app.get('/startLearning', async (req, res) =>{
 });
 
 app.get('/', (req, res) =>{
-    res.send('on learning Server');
+    res.send('learning Server ON!!');
 });
 
 // 서버 구동
-app.listen(port, () => {
-    console.log(`Example app listening at http://localhost:${port}`)
+app.listen(() => {
+    console.log(`Server listening at `+learningServerURL+", connected mainserver is "+mainServerURL);
 });
