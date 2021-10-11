@@ -7,7 +7,7 @@ running = false;
 
 let mainServerURL = '';
 let learningServerURL = '';
-
+const port = 3001;
 if(process.env.NODE_ENV==='dev'){
     mainServerURL = config.dev.mainserverURL;
     learningServerURL = config.dev.learningserverURL;
@@ -91,6 +91,6 @@ app.get('/', (req, res) =>{
 });
 
 // 서버 구동
-app.listen(() => {
+app.listen(port,() => {
     console.log(`Server listening at `+learningServerURL+", connected mainserver is "+mainServerURL);
 });
