@@ -9,3 +9,5 @@
 - 할일
 연희 프로그램 구현 시퀀스 보기
 running변수 지울까?
+
+image 다운로드, json 생성, tflite업로드

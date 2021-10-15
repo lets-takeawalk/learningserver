@@ -7,7 +7,7 @@ running = false;
 
 let mainServerURL = '';
 let learningServerURL = '';
-const port = 3001;
+const port =3001;
 if(process.env.NODE_ENV==='dev'){
     mainServerURL = config.dev.mainserverURL;
     learningServerURL = config.dev.learningserverURL;
@@ -56,7 +56,7 @@ app.get('/startLearning', async (req, res) =>{
         running = true
 
         // 모델 학습 구문 (필요 파라메터는 학습서버2메인서버의 리퀘스트를 통해 얻어온다.)
-        const result = spawn('python', ['./augmentation/test.py','test1','test2']);
+        const result = spawn('python', ['./LearningModel/test.py','test1','test2']);
         result.stdout.on('data', function(result){ 
             // 어떤 빌딩 객체의 학습이 끝났는지 로그
             console.log(result.toString()); 
