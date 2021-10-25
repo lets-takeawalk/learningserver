@@ -24,6 +24,17 @@ if(process.env.NODE_ENV==='dev'){
 // - 학습이 끝난 뒤에 메인 서버에 학습 종료를 알림(mainserver/isNewimg) ---- (3)
 // - mainserver/learningserver/isNewImg에서 새로운 학습 대상이 존재할 경우 다시 아래 API(get.'/')호출(데이터 전송 ㄴㄴ)
 
+// 메인서버에서 넘어온 buildingInfo데이터를 json파일로 저장하는 함수
+function mkInfoJson(info){
+    var fs = require('fs');
+    fs.writeFileSync('./LearningModel/buildingInfo.json',JSON.stringify(info),(err)=>{
+        if(err === null)
+            console.log('buildingInfo.json 파일 생성');
+        else
+            console.log('buildingInfo.json 파일 생성 에러');
+    })
+}
+
 var onLearning = [];
 
 app.get('/startLearning', async (req, res) =>{
@@ -33,8 +44,10 @@ app.get('/startLearning', async (req, res) =>{
         console.log(JSON.parse(body).code+" from creatTempModel_ver, start learning sequence");
     });
     // 메인서버로 리퀘스트 생성 ---- (1) 필요한 데이터를 얻어와야함.
-    request(mainServerURL+'/learningServer/imgdata',function(err, response, body){
+    request(mainServerURL+'/learningServer/imgdata', async function(err, response, body){
         var tmp = JSON.parse(body).buildingInfo;
+        mkInfoJson(tmp);
+
         for(var i= 0;i<tmp.length;i++)
             onLearning.push(tmp[i].id);
         console.log('learning target building object IDs : '+onLearning);
@@ -56,7 +69,7 @@ app.get('/startLearning', async (req, res) =>{
         running = true
 
         // 모델 학습 구문 (필요 파라메터는 학습서버2메인서버의 리퀘스트를 통해 얻어온다.)
-        const result = spawn('python', ['./LearningModel/test.py','test1','test2']);
+        const result = spawn('python', ['./LearningModel/makeTFlite.py','test1','test2']);
         result.stdout.on('data', function(result){ 
             // 어떤 빌딩 객체의 학습이 끝났는지 로그
             console.log(result.toString()); 
