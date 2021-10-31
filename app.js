@@ -135,12 +135,12 @@ app.get('/startLearning', async (req, res) =>{
 
             // 학습이 끝난 가중치 파일과 라벨을 스토리지에 업로드 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             uploade_tfliteAndLabels();
-            
+
             // 학습이 끝났음을 알림 ---- (3), 추가로 학습할 데이터가 있는지 확인 메인서버에 요청.
             let option ={
                 url: mainServerURL+'/learningServer/isNewImg',
                 method: 'POST',
-                body:{// result에 새로운 모델이 저장된 URL이 나온다. 그것을 아래에 넣어줌.
+                body:{// result에 새로운 모델이 저장된 URL이 나온다. 그것을 아래에 넣어줌. -------------------------------------------------------------------이거 수정
                     modelURL: 'https://medium.com/harrythegreat/node-js%EC%97%90%EC%84%9C-request-js-%EC%82%AC%EC%9A%A9%ED%95%98%EA%B8%B0-28744c52f68d'
                 },
                 json:true
