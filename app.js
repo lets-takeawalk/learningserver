@@ -1,8 +1,20 @@
 const express = require('express');
 const request = require('request');
 const spawn = require('child_process').spawn; // 자식 프로세스 생성
+
+// firebase storage접근용
+const admin = require('firebase-admin'); 
+const serviceAccount = require('.config/takewalk-9d36a-firebase-adminsdk-yiw3h-213f00f246.json');
+const STORAGEBUCKET = 'takewalk-9d36a.appspot.com';
+
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    storageBucket: STORAGEBUCKET// firebase storage 버켓 위치
+});
+const bucket = admin.storage().bucket();
+
 const app = express();
-const config = require('./config');
+const config = require('./config/config');
 running = false;
 
 let mainServerURL = '';
@@ -25,6 +37,7 @@ if(process.env.NODE_ENV==='dev'){
 // - mainserver/learningserver/isNewImg에서 새로운 학습 대상이 존재할 경우 다시 아래 API(get.'/')호출(데이터 전송 ㄴㄴ)
 
 // 메인서버에서 넘어온 buildingInfo데이터를 json파일로 저장하는 함수
+// 굳이파일을 만들지 않아도 됨 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 function mkInfoJson(info){
     var fs = require('fs');
     fs.writeFileSync('./LearningModel/buildingInfo.json',JSON.stringify(info),(err)=>{
@@ -32,9 +45,51 @@ function mkInfoJson(info){
             console.log('buildingInfo.json 파일 생성');
         else
             console.log('buildingInfo.json 파일 생성 에러');
-    })
+    });
 }
 
+// 학습대상 파일의 스토리지 저장 URL로 로컬 환경에 다운로드 받는 함수
+function download_imgs(info){
+    json_par = JSON.parse(info);
+    var fs = require('fs');
+    for (var i in json_par){
+        var dir = './LearningModel/image/'+json_par[i].id // './LearningModel/image/0'
+        if(!fs.existsSync(dir))// 폴더 생성
+            fs.mkdirSync(dir);
+
+        for (var j in json_par[i].imgInfos){
+            file_name = json_par[i].imgInfos[j].imgURL.split(STORAGEBUCKET+'/o/')[1].split('?')[0]
+
+            // 이미지 다운
+            var file = bucket.file(file_name);
+            file.download({destination: dir +'/'+ file_name});
+            // 좌표 txt파일 생성
+            fs.writeFileSync(dir+'/'+file_name.substr(0,file_name.length - 3)+'txt', json_par[i].id+' '+json_par[i].imgInfos[j].x_t+' '+json_par[i].imgInfos[j].y_t+' '+json_par[i].imgInfos[j].x_b+' '+json_par[i].imgInfos[j].y_b);
+        }
+    }
+};
+
+// 라벨 폴더에 한글 라벨과 영어 라벨을 추가하는 함수 -> 기존 라벨에 추가로 부착되는 것 !! 주의 !!
+function appendLabels(info){
+    json_par = JSON.parse(info);
+    var fs = require('fs');
+    for(var i in json_par){
+        fs.appendFileSync('./LearningModel/label/kor.txt',json_par[i].buildingNameKor+'\n');
+        fs.appendFileSync('./LearningModel/label/eng.txt',json_par[i].buildingNameEng+'\n');
+    }
+};
+
+// tflite파일과 label파일을 스토리지에 업로드하는 함수.
+async function uploade_tfliteAndLabels(){
+    var fs = require('fs');
+    var files = fs.readdirSync('./LearningModel/tflite_result');
+    var file = files.sort()[files.length - 1];
+    await bucket.upload('./LearningModel/tflite_result/'+file,{destination:'weight/'+'yolov4-tiny-416.tflite'});
+    await bucket.upload('./LearningModel/label/kor.txt',{destination:'labels/'+'label.txt'});
+    await bucket.upload('./LearningModel/label/eng.txt',{destination:'labels/'+'coco.txt'});
+};
+
+// 학습대상 건물 id를 저장하는 배열
 var onLearning = [];
 
 app.get('/startLearning', async (req, res) =>{
@@ -47,6 +102,8 @@ app.get('/startLearning', async (req, res) =>{
     request(mainServerURL+'/learningServer/imgdata', async function(err, response, body){
         var tmp = JSON.parse(body).buildingInfo;
         mkInfoJson(tmp);
+        download_imgs(tmp); // ----------------------------------------------------- 이거 작동 확인!!!!!!!!!!!!!!!!!!!!
+        appendLabels(tmo); // ----------------------------------------------------- 이거 작동 확인!!!!!!!!!!!!!!!!!!!!
 
         for(var i= 0;i<tmp.length;i++)
             onLearning.push(tmp[i].id);
@@ -76,6 +133,9 @@ app.get('/startLearning', async (req, res) =>{
             console.log('학습 종료 building id : '+onLearning);
             onLearning = [];
 
+            // 학습이 끝난 가중치 파일과 라벨을 스토리지에 업로드 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            uploade_tfliteAndLabels();
+            
             // 학습이 끝났음을 알림 ---- (3), 추가로 학습할 데이터가 있는지 확인 메인서버에 요청.
             let option ={
                 url: mainServerURL+'/learningServer/isNewImg',

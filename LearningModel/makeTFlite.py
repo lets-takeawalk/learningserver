@@ -16,4 +16,4 @@ if __name__ == '__main__':
     t1 = sys.argv[1]
     t2 = sys.argv[2]
     getName(t1, t2)
-    mkf(datetime.datetime.now().strftime('%Y%m%d_%H%M%S'),t1, t2)
+    mkf(datetime.datetime.now().strftime('%Y%m%d%H%M%S'),t1, t2)
