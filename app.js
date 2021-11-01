@@ -1,6 +1,7 @@
 const express = require('express');
 const request = require('request');
 const spawn = require('child_process').spawn; // 자식 프로세스 생성
+const fs = require('fs');
 
 // firebase storage접근용
 const admin = require('firebase-admin'); 
@@ -39,7 +40,6 @@ if(process.env.NODE_ENV==='dev'){
 // 메인서버에서 넘어온 buildingInfo데이터를 json파일로 저장하는 함수
 // 굳이파일을 만들지 않아도 됨 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 function mkInfoJson(info){
-    var fs = require('fs');
     fs.writeFileSync('./LearningModel/buildingInfo.json',JSON.stringify(info),(err)=>{
         if(err === null)
             console.log('buildingInfo.json 파일 생성');
@@ -51,9 +51,8 @@ function mkInfoJson(info){
 // 학습대상 파일의 스토리지 저장 URL로 로컬 환경에 다운로드 받는 함수
 function download_imgs(info){
     json_par = JSON.parse(info);
-    var fs = require('fs');
     for (var i in json_par){
-        var dir = './LearningModel/image/'+json_par[i].id // './LearningModel/image/0'
+        var dir = './LearningModel/image/'+ String(parseInt(json_par[i].id)-1) // './LearningModel/image/0'
         if(!fs.existsSync(dir))// 폴더 생성
             fs.mkdirSync(dir);
 
@@ -70,23 +69,51 @@ function download_imgs(info){
 };
 
 // 라벨 폴더에 한글 라벨과 영어 라벨을 추가하는 함수 -> 기존 라벨에 추가로 부착되는 것 !! 주의 !!
+// 알고리즘 //
+// 기본 전제, 메인서버에서 넘어오는 buildingInfo id는 sort되어있다.
+// 중간에 id가 생략된 건물이 존재할 수 있다. 라벨 파일에 건물 명이 순서대로 존재해야한다.
+// buildingInfo의 영어이름과 한글이름은 생략될 수 없다.
+//
+// 이때, 작은 id부터 순서대로 기존 이름에 삽입하면, 전체 건물 라벨의 sort는 유지된다.
 function appendLabels(info){
     json_par = JSON.parse(info);
-    var fs = require('fs');
+    
+    var kornamearr = fs.readFileSync('./LearningModel/label/kor.txt').toString().split('\n');
+    var engnamearr = fs.readFileSync('./LearningModel/label/eng.txt').toString().split('\n');
+    var len = kornamearr.length;
     for(var i in json_par){
-        fs.appendFileSync('./LearningModel/label/kor.txt',json_par[i].buildingNameKor+'\n');
-        fs.appendFileSync('./LearningModel/label/eng.txt',json_par[i].buildingNameEng+'\n');
+        console.log(len+", "+json_par[i].id);
+        if (len < json_par[i].id) {
+            fs.appendFileSync('./LearningModel/label/kor.txt',json_par[i].buildingNameKor+'\n');
+            fs.appendFileSync('./LearningModel/label/eng.txt',json_par[i].buildingNameEng+'\n');
+        }else{
+            var khead = kornamearr.slice(0,json_par[i].id-1);
+            var ktail = kornamearr.slice(json_par[i].id-1,len);
+            var ktmp = [...khead, json_par[i].buildingNameKor, ...ktail];
+            var ehead = engnamearr.slice(0,json_par[i].id-1);
+            var etail = engnamearr.slice(json_par[i].id-1, len);
+            var etmp = [...ehead, json_par[i].buildingNameEng, ...etail];
+            fs.writeFileSync('./LearningModel/label/kor.txt','');
+            fs.writeFileSync('./LearningModel/label/eng.txt','');
+            for( var j=0;j<tmp.length - 1 ;j++){
+                fs.appendFileSync('./LearningModel/label/kor.txt',ktmp[j]+'\n');
+                fs.appendFileSync('./LearningModel/label/eng.txt',etmp[j]+'\n');
+            } 
+            kornamearr=ktmp;
+            engnamearr=etmp;
+            len += 1;
+        }
     }
 };
 
 // tflite파일과 label파일을 스토리지에 업로드하는 함수.
 async function uploade_tfliteAndLabels(){
-    var fs = require('fs');
     var files = fs.readdirSync('./LearningModel/tflite_result');
     var file = files.sort()[files.length - 1];
     await bucket.upload('./LearningModel/tflite_result/'+file,{destination:'weight/'+'yolov4-tiny-416.tflite'});
     await bucket.upload('./LearningModel/label/kor.txt',{destination:'labels/'+'label.txt'});
     await bucket.upload('./LearningModel/label/eng.txt',{destination:'labels/'+'coco.txt'});
+    return file; // 최신버전
 };
 
 // 학습대상 건물 id를 저장하는 배열
@@ -134,14 +161,14 @@ app.get('/startLearning', async (req, res) =>{
             onLearning = [];
 
             // 학습이 끝난 가중치 파일과 라벨을 스토리지에 업로드 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            uploade_tfliteAndLabels();
+            var version = uploade_tfliteAndLabels();
 
             // 학습이 끝났음을 알림 ---- (3), 추가로 학습할 데이터가 있는지 확인 메인서버에 요청.
             let option ={
                 url: mainServerURL+'/learningServer/isNewImg',
                 method: 'POST',
-                body:{// result에 새로운 모델이 저장된 URL이 나온다. 그것을 아래에 넣어줌. -------------------------------------------------------------------이거 수정
-                    modelURL: 'https://medium.com/harrythegreat/node-js%EC%97%90%EC%84%9C-request-js-%EC%82%AC%EC%9A%A9%ED%95%98%EA%B8%B0-28744c52f68d'
+                body:{// result에 새로운 모델이 저장된 URL이 나온다. 그것을 아래에 넣어줌. -------------------------------------------------------------------이거 수정 버전정보를 전달해야함.
+                    modelVersion: version
                 },
                 json:true
             };
