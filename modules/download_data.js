@@ -12,7 +12,6 @@ module.exports = () =>{
         },
         imags: function(info, STORAGEBUCKET, bucket){
             // 학습대상 파일의 스토리지 저장 URL로 로컬 환경에 다운로드 받는 함수
-            // console.log(info);
             json_par = info;
             for (var i in json_par){
                 var dir = './LearningModel/image/'+ String(parseInt(json_par[i].id)-1) // './LearningModel/image/0'
@@ -40,6 +39,10 @@ module.exports = () =>{
             //
             // 이때, 작은 id부터 순서대로 기존 이름에 삽입하면, 전체 건물 라벨의 sort는 유지된다.
             json_par = info;
+            if(!fs.existsSync('./LearningModel/label/kor.txt'))
+                fs.writeFileSync('./LearningModel/label/kor.txt','');
+            if(!fs.existsSync('./LearningModel/label/eng.txt'))
+                fs.writeFileSync('./LearningModel/label/eng.txt','');
     
             var kornamearr = fs.readFileSync('./LearningModel/label/kor.txt').toString().split('\n');
             var engnamearr = fs.readFileSync('./LearningModel/label/eng.txt').toString().split('\n');

@@ -1,2 +1,6 @@
 node_modules/
 config/
+LearningModel/label/*.txt
+LearningModel/image/**/
+LearningModel/tflite_result/*.tflite
+LearningModel/*.json

@@ -1,9 +1,0 @@
-#
-./image/0/
-origianl image(.jpg), original labels(.txt)
-두 파일의 이름은 동일해야함. 확장자만 다른 것
-
-# .txt
-class xtop, ytop, xbottom, ybottom
-
-이런식으로 이미지와 txt를 저장하면 됨.
