@@ -1,6 +1,18 @@
 const fs =require('fs');
 module.exports = () =>{
     return{
+        setDir_stat: function(){
+            // 초기 디렉토리 환경 설정 함수
+            if(!fs.existsSync('./LearningModel/image/'))
+                fs.mkdirSync('./LearningModel/image/');
+            if(!fs.existsSync('./LearningModel/label/')){
+                fs.mkdirSync('./LearningModel/label/');
+                fs.writeFileSync('./LearningModel/label/kor.txt','');
+                fs.writeFileSync('./LearningModel/label/eng.txt','');
+            }
+            if(!fs.existsSync('./LearningModel/tflite_result/'))
+                fs.mkdirSync('./LearningModel/tflite_result/');
+        },
         mkInfoJson: function(info){
             // 메인서버에서 넘어온 buildingInfo데이터를 json파일로 저장하는 함수
             fs.writeFileSync('./LearningModel/buildingInfo.json',JSON.stringify(info),(err)=>{
@@ -13,6 +25,7 @@ module.exports = () =>{
         imags: function(info, STORAGEBUCKET, bucket){
             // 학습대상 파일의 스토리지 저장 URL로 로컬 환경에 다운로드 받는 함수
             json_par = info;
+            
             for (var i in json_par){
                 var dir = './LearningModel/image/'+ String(parseInt(json_par[i].id)-1) // './LearningModel/image/0'
                 if(!fs.existsSync(dir))// 폴더 생성
@@ -39,10 +52,6 @@ module.exports = () =>{
             //
             // 이때, 작은 id부터 순서대로 기존 이름에 삽입하면, 전체 건물 라벨의 sort는 유지된다.
             json_par = info;
-            if(!fs.existsSync('./LearningModel/label/kor.txt'))
-                fs.writeFileSync('./LearningModel/label/kor.txt','');
-            if(!fs.existsSync('./LearningModel/label/eng.txt'))
-                fs.writeFileSync('./LearningModel/label/eng.txt','');
     
             var kornamearr = fs.readFileSync('./LearningModel/label/kor.txt').toString().split('\n');
             var engnamearr = fs.readFileSync('./LearningModel/label/eng.txt').toString().split('\n');
