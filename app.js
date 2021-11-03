@@ -3,6 +3,8 @@ const spawn = require('child_process').spawn; // 자식 프로세스 생성
 
 var upload_weight = require('./modules/upload');
 var requests = require('./modules/requests');
+var setdatas = require('./modules/download_data');
+setdatas().setDir_stat();
 
 const app = express();
 const config = require('./config/config');
