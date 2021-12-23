@@ -56,10 +56,10 @@ app.get('/startLearning', (req, res) =>{
     })
 
     // 모델 학습 구문 (필요 파라메터는 학습서버2메인서버의 리퀘스트를 통해 얻어온다.)
-    const result = spawn('python', ['./LearningModel/makeTFlite.py','test1','test2']);
+    const result = spawn('python', ['./LearningModel/makeTFlite.py'],);
     result.stdout.on('data', async function(result){ 
-        // 어떤 빌딩 객체의 학습이 끝났는지 로그
-        console.log(result.toString()); 
+        // 어떤 빌딩 객체의 학습이 끝났는지 로그 
+        console.log(result.toString());
         console.log('학습 종료 building id : '+onLearning);
         onLearning = [];
 

@@ -12,6 +12,7 @@ module.exports = () =>{
             }
             if(!fs.existsSync('./LearningModel/tflite_result/'))
                 fs.mkdirSync('./LearningModel/tflite_result/');
+
         },
         mkInfoJson: function(info){
             // 메인서버에서 넘어온 buildingInfo데이터를 json파일로 저장하는 함수
@@ -29,7 +30,12 @@ module.exports = () =>{
             for (var i in json_par){
                 var dir = './LearningModel/image/'+ String(parseInt(json_par[i].id)-1) // './LearningModel/image/0'
                 if(!fs.existsSync(dir))// 폴더 생성
-                    fs.mkdirSync(dir);
+                    try {
+                        fs.mkdirSync(dir);    
+                    } catch (error) {
+                        console.log(error);
+                    }
+                    
         
                 for (var j in json_par[i].imgInfos){
                     if (typeof(json_par[i].imgInfos[j].imgURL) !== 'undefined' && json_par[i].imgInfos[j].imgURL)
